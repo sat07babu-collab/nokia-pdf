@@ -16,37 +16,37 @@
             background-color: #121212;
             color: #e0e0e0;
             font-family: -apple-system, sans-serif;
-            overflow: hidden; /* Stop body scrolling */
+            overflow: hidden;
             width: 240px;
             height: 320px;
         }
         .header {
             background-color: #1f1f1f;
-            height: 40px;
-            line-height: 40px;
-            font-size: 14px;
+            height: 35px;
+            line-height: 35px;
+            font-size: 13px;
             font-weight: bold;
             text-align: center;
             border-bottom: 2px solid #00bc8c;
             display: flex;
             justify-content: space-between;
-            padding: 0 10px;
+            padding: 0 8px;
             box-sizing: border-box;
             width: 240px;
         }
         .header-btn {
             color: #00bc8c;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
         }
         #library-view {
             padding: 10px;
             width: 240px;
-            height: 280px;
+            height: 285px;
             overflow-y: auto;
         }
         .section-title {
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
             margin-bottom: 8px;
             text-transform: uppercase;
@@ -63,30 +63,59 @@
             font-weight: bold;
             color: #fff;
         }
-        .book-item:focus {
-            background: #00bc8c;
-            border-color: #fff;
-            outline: none;
-        }
         
-        /* HARDCODED DIMENSIONS FOR NOKIA SCREEN */
-        #reader-view {
+        /* READER AREA */
+        #reader-container {
             display: none;
+            width: 240px;
+            height: 285px; /* Leaves room for buttons */
+            position: relative;
+            background: #1a1a1a;
+        }
+        #reader-view {
             width: 240px !important;
-            height: 280px !important;
+            height: 245px !important; /* Slightly smaller to fit buttons */
             background: #1a1a1a;
             position: absolute;
-            top: 40px;
+            top: 0;
             left: 0;
             z-index: 5;
         }
-
-        /* CRITICAL FIX: Force the internal epub iframe to be visible and fill the box */
         #reader-view iframe {
             width: 240px !important;
-            height: 280px !important;
+            height: 245px !important;
             border: none !important;
-            display: block !important;
+        }
+        
+        /* ON-SCREEN NAVIGATION BUTTONS */
+        #page-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 240px;
+            height: 40px;
+            background: #1f1f1f;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        .nav-btn {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .nav-btn:active {
+            background: #00bc8c;
+            color: #000;
         }
         
         #loading {
@@ -96,15 +125,6 @@
             margin-top: 100px;
             text-align: center;
             width: 240px;
-        }
-        #error-debug {
-            color: #ff6b6b;
-            font-size: 12px;
-            padding: 10px;
-            text-align: center;
-            display: none;
-            width: 220px;
-            margin: 0 auto;
         }
     </style>
 </head>
@@ -124,38 +144,40 @@
     </div>
 
     <div id="loading">Loading book... please wait.</div>
-    <div id="error-debug"></div>
-    <div id="reader-view"></div>
+    
+    <!-- Reader and Controls -->
+    <div id="reader-container">
+        <div id="reader-view" tabindex="0"></div>
+        <div id="page-controls">
+            <button class="nav-btn" onclick="turnPage(-1)">◀ Prev</button>
+            <span id="page-indicator" style="font-size:10px; color:#888;">Cover</span>
+            <button class="nav-btn" onclick="turnPage(1)">Next ▶</button>
+        </div>
+    </div>
 
     <script>
         var book = null;
         var rendition = null;
 
         function openBook(fileName, bookTitle) {
-            // 1. Hide library
             document.getElementById('library-view').style.display = 'none';
-            
-            // 2. Make reader visible BEFORE rendering so it calculates size correctly
-            document.getElementById('reader-view').style.display = 'block';
+            document.getElementById('reader-container').style.display = 'block';
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('error-debug').style.display = 'none';
-            
             document.getElementById('nav-title').innerText = "Loading...";
             document.getElementById('back-btn').style.visibility = 'visible';
 
             if (typeof JSZip === 'undefined' || typeof ePub === 'undefined') {
-                showError("Libraries failed to load.");
+                document.getElementById('loading').innerText = "Libraries failed to load.";
                 return;
             }
 
             try {
                 book = ePub(fileName);
                 
-                // 3. Render with EXACT pixel dimensions for the Nokia screen
                 rendition = book.renderTo("reader-view", {
                     width: 240,
-                    height: 280,
-                    flow: "paginated" // Paginated works better on small screens
+                    height: 245,
+                    flow: "paginated"
                 });
 
                 rendition.themes.default({
@@ -169,28 +191,36 @@
                     }
                 });
 
-                // 4. Display the book
                 rendition.display().then(function() {
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('nav-title').innerText = bookTitle;
                     
-                    // Force a resize after a tiny delay to ensure the iframe wakes up
+                    // Force focus to the reader so keypad works
+                    document.getElementById('reader-view').focus();
+                    
                     setTimeout(function() {
-                        rendition.resize(240, 280);
+                        rendition.resize(240, 245);
                     }, 500);
                     
                 }).catch(function(err) {
-                    showError("Error reading book: " + err.message);
+                    document.getElementById('loading').innerText = "Error: " + err.message;
                 });
             } catch (err) {
-                showError("System error: " + err.message);
+                document.getElementById('loading').innerText = "System error.";
             }
         }
 
-        function showError(msg) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error-debug').style.display = 'block';
-            document.getElementById('error-debug').innerHTML = "⚠️ " + msg;
+        // Function to turn pages using buttons
+        function turnPage(direction) {
+            if (rendition) {
+                if (direction === 1) {
+                    rendition.next();
+                } else {
+                    rendition.prev();
+                }
+                // Return focus to reader so keypad still works after clicking button
+                document.getElementById('reader-view').focus();
+            }
         }
 
         function goBack() {
@@ -199,24 +229,21 @@
                 rendition = null;
                 book = null;
             }
-            document.getElementById('reader-view').style.display = 'none';
+            document.getElementById('reader-container').style.display = 'none';
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('error-debug').style.display = 'none';
             document.getElementById('library-view').style.display = 'block';
             document.getElementById('nav-title').innerText = "My Digital Bookshelf";
             document.getElementById('back-btn').style.visibility = 'hidden';
         }
 
-        // Keypad navigation for PAGINATED mode (Next/Prev page)
+        // Keypad navigation
         document.addEventListener('keydown', function(e) {
-            if (rendition && document.getElementById('reader-view').style.display === 'block') {
-                // Down arrow or Right arrow = Next Page
+            if (rendition && document.getElementById('reader-container').style.display === 'block') {
                 if (e.keyCode === 40 || e.key === 'ArrowDown' || e.keyCode === 39 || e.key === 'ArrowRight') {
-                    rendition.next();
+                    turnPage(1);
                 } 
-                // Up arrow or Left arrow = Previous Page
                 else if (e.keyCode === 38 || e.key === 'ArrowUp' || e.keyCode === 37 || e.key === 'ArrowLeft') {
-                    rendition.prev();
+                    turnPage(-1);
                 }
             }
         });
