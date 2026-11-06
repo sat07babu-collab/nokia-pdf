@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
     
-    <!-- 1. JSZip MUST load first to unpack the .epub archive structure -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
-    <!-- 2. Epub.js loads second to render the unpacked text -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/epub.js/0.3.93/epub.min.js"></script>
+    <!-- Using jsDelivr CDN - more reliable for restricted environments -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
     
     <style>
         body {
@@ -90,19 +88,24 @@
     
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
-        
-        <!-- FIXED: Points exactly to 'book.epub' which exists in your repo -->
         <div class="book-item" tabindex="0" onclick="openBook('book.epub', 'Livewired')">
             📖 1. Livewired (David Eagleman)
         </div>
     </div>
 
-    <div id="loading">Unpacking chapters... please wait.</div>
+    <div id="loading">Loading book... please wait.</div>
     <div id="reader-view"></div>
 
     <script>
         var book = null;
         var rendition = null;
+
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Page loaded. Checking libraries...");
+            console.log("JSZip loaded:", typeof JSZip !== 'undefined');
+            console.log("ePub loaded:", typeof ePub !== 'undefined');
+        });
 
         function openBook(fileName, bookTitle) {
             document.getElementById('library-view').style.display = 'none';
@@ -110,22 +113,21 @@
             document.getElementById('nav-title').innerText = "Loading...";
             document.getElementById('back-btn').style.visibility = 'visible';
 
-            // SAFETY CHECK: Verify the libraries actually loaded before running
+            // Check if libraries loaded
             if (typeof JSZip === 'undefined') {
-                document.getElementById('loading').innerText = "Critical Error: JSZip failed to load. Check internet.";
-                console.error("JSZip is missing");
+                document.getElementById('loading').innerText = "Error: JSZip not loaded. Check internet connection.";
+                console.error("JSZip failed to load from CDN");
                 return;
             }
             if (typeof ePub === 'undefined') {
-                document.getElementById('loading').innerText = "Critical Error: Epub.js failed to load.";
-                console.error("ePub is missing");
+                document.getElementById('loading').innerText = "Error: Epub.js not loaded. Check internet connection.";
+                console.error("ePub.js failed to load from CDN");
                 return;
             }
 
+            console.log("Loading book:", fileName);
+            
             try {
-                console.log("Attempting to load:", fileName);
-                
-                // Initialize the book engine with the correct local file
                 book = ePub(fileName);
                 rendition = book.renderTo("reader-view", {
                     width: "100%",
@@ -134,21 +136,27 @@
                 });
 
                 rendition.themes.default({
-                    "body": { "color": "#e0e0e0", "background": "#1a1a1a", "font-size": "16px", "line-height": "1.6" }
+                    "body": { 
+                        "color": "#e0e0e0", 
+                        "background": "#1a1a1a", 
+                        "font-size": "16px", 
+                        "line-height": "1.6",
+                        "padding": "10px"
+                    }
                 });
 
                 rendition.display().then(function() {
+                    console.log("Book displayed successfully!");
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('reader-view').style.display = 'block';
                     document.getElementById('nav-title').innerText = bookTitle;
-                    console.log("Book loaded successfully!");
                 }).catch(function(err) {
-                    document.getElementById('loading').innerText = "Error: Could not find or parse 'book.epub'.";
-                    console.error("Epub render error:", err);
+                    console.error("Display error:", err);
+                    document.getElementById('loading').innerText = "Error displaying book: " + err.message;
                 });
             } catch (err) {
-                document.getElementById('loading').innerText = "Fatal error initializing book.";
-                console.error(err);
+                console.error("Initialization error:", err);
+                document.getElementById('loading').innerText = "Error: " + err.message;
             }
         }
 
@@ -165,7 +173,6 @@
             document.getElementById('back-btn').style.visibility = 'hidden';
         }
 
-        // Keypad navigation mapping
         document.addEventListener('keydown', function(e) {
             if (rendition && document.getElementById('reader-view').style.display === 'block') {
                 if (e.keyCode === 40 || e.key === 'ArrowDown') {
