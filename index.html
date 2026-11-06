@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
     
-    <!-- Try loading from GitHub raw content -->
-    <script src="https://raw.githack.com/sat07babu-collab/nokia-pdf/main/jszip.min.js"></script>
-    <script src="https://raw.githack.com/sat07babu-collab/nokia-pdf/main/epub.min.js"></script>
+    <!-- LOCAL FILES: Loading directly from your repository, bypassing CDN blocks -->
+    <script src="jszip.min.js"></script>
+    <script src="epub.min.js"></script>
     
     <style>
         body {
@@ -81,6 +81,7 @@
             font-size: 12px;
             padding: 10px;
             text-align: center;
+            display: none;
         }
     </style>
 </head>
@@ -107,20 +108,6 @@
         var book = null;
         var rendition = null;
 
-        // Check script loading on page load
-        window.addEventListener('load', function() {
-            var debugDiv = document.getElementById('error-debug');
-            if (typeof JSZip === 'undefined') {
-                debugDiv.innerHTML = "⚠️ JSZip library not loaded<br>CDN blocked or offline";
-            }
-            if (typeof ePub === 'undefined') {
-                debugDiv.innerHTML += (debugDiv.innerHTML ? "<br>" : "") + "⚠️ Epub.js library not loaded<br>CDN blocked or offline";
-            }
-            if (typeof JSZip !== 'undefined' && typeof ePub !== 'undefined') {
-                debugDiv.innerHTML = "✅ All libraries loaded successfully";
-            }
-        });
-
         function openBook(fileName, bookTitle) {
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
@@ -128,21 +115,16 @@
             document.getElementById('nav-title').innerText = "Loading...";
             document.getElementById('back-btn').style.visibility = 'visible';
 
+            // Check if local libraries loaded
             if (typeof JSZip === 'undefined') {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error-debug').style.display = 'block';
-                document.getElementById('error-debug').innerHTML = "❌ Cannot load book:<br>JSZip library is blocked<br>Please check internet connection";
+                showError("JSZip file is missing or failed to load. Did you upload jszip.min.js?");
                 return;
             }
             if (typeof ePub === 'undefined') {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error-debug').style.display = 'block';
-                document.getElementById('error-debug').innerHTML = "❌ Cannot load book:<br>Epub.js library is blocked<br>Please check internet connection";
+                showError("Epub.js file is missing or failed to load. Did you upload epub.min.js?");
                 return;
             }
 
-            console.log("Loading book:", fileName);
-            
             try {
                 book = ePub(fileName);
                 rendition = book.renderTo("reader-view", {
@@ -156,7 +138,8 @@
                         "color": "#e0e0e0", 
                         "background": "#1a1a1a", 
                         "font-size": "16px", 
-                        "line-height": "1.6"
+                        "line-height": "1.6",
+                        "padding": "10px"
                     }
                 });
 
@@ -165,16 +148,17 @@
                     document.getElementById('reader-view').style.display = 'block';
                     document.getElementById('nav-title').innerText = bookTitle;
                 }).catch(function(err) {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('error-debug').style.display = 'block';
-                    document.getElementById('error-debug').innerHTML = "❌ Error loading book:<br>" + err.message;
-                    console.error("Epub error:", err);
+                    showError("Error reading book.epub: " + err.message);
                 });
             } catch (err) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error-debug').style.display = 'block';
-                document.getElementById('error-debug').innerHTML = "❌ Error:<br>" + err.message;
+                showError("System error: " + err.message);
             }
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-debug').style.display = 'block';
+            document.getElementById('error-debug').innerHTML = "⚠️ " + msg;
         }
 
         function goBack() {
