@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nokia Cloud EPUB Reader</title>
+    <!-- Include a lightweight, streaming EPUB parsing engine -->
+    <script src="https://cloudflare.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: -apple-system, sans-serif;
+            overflow: hidden;
+        }
+        .header {
+            background-color: #1f1f1f;
+            height: 40px;
+            line-height: 40px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 2px solid #00bc8c;
+        }
+        .input-area {
+            padding: 6px;
+            background-color: #1a1a1a;
+            display: flex;
+            gap: 4px;
+        }
+        input {
+            flex: 1;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 4px 6px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+        button {
+            background: #00bc8c;
+            color: #fff;
+            border: none;
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        #viewer {
+            width: 100vw;
+            height: calc(100vh - 78px);
+            background: #1a1a1a;
+        }
+        /* Style the inside of the book container */
+        .epub-container {
+            padding: 10px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">Cloud EPUB Reader</div>
+    
+    <div class="input-area">
+        <input type="text" id="bookUrl" placeholder="Paste .epub URL here" value="https://epubjs.org">
+        <button onclick="loadBook()">Open</button>
+    </div>
+
+    <div id="viewer"></div>
+
+    <script>
+        var book = null;
+        var rendition = null;
+
+        function loadBook() {
+            var url = document.getElementById('bookUrl').value.trim();
+            if(!url) return;
+            
+            document.getElementById('viewer').innerHTML = ""; // Reset canvas
+            
+            // Initialize the EPUB engine
+            book = ePub(url);
+            rendition = book.renderTo("viewer", {
+                width: "100%",
+                height: "100%",
+                flow: "scrolled-doc" // Single continuous scrolling column optimal for Nokia layout
+            });
+
+            // Set eye-friendly themes matching our dark UI
+            rendition.themes.default({
+                "body": { "color": "#e0e0e0", "background": "#1a1a1a", "font-size": "14px", "line-height": "1.5" },
+                "p": { "margin": "0 0 1em 0" }
+            });
+
+            rendition.display();
+        }
+
+        // Initialize with public template book on window launch
+        window.onload = loadBook;
+
+        // Keypad pagination optimization for physical feature phones
+        document.addEventListener('keydown', function(e) {
+            if (!rendition) return;
+            if (e.keyCode === 40 || e.key === 'ArrowDown') {
+                window.scrollBy(0, 60); // Down arrow scrolls text down smoothly
+            } else if (e.keyCode === 38 || e.key === 'ArrowUp') {
+                window.scrollBy(0, -60); // Up arrow scrolls text up smoothly
+            }
+        });
+    </script>
+
+</body>
+</html>
