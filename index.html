@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
     
-    <!-- FIXED ABSOLUTE CDN LINKS: Explicitly loads JSZip first to unpack the .epub archive files -->
+    <!-- FIXED ABSOLUTE CDN LINKS: Explicitly loads dependencies safely -->
     <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
+    <script src="https://jsdelivr.net"></script>
     
     <style>
         body {
@@ -87,7 +87,8 @@
     
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
-        <div class="book-item" tabindex="0" onclick="openBook('Livewired The Inside Story of the Ever-Changing Brain (David Eagleman) (z-library.sk, 1lib.sk, z-lib.sk).epub', 'Livewired')">
+        <!-- FIXED: Points directly to the clean name 'book.epub' -->
+        <div class="book-item" tabindex="0" onclick="openBook('book.epub', 'Livewired')">
             📖 1. Livewired (David Eagleman)
         </div>
     </div>
@@ -105,7 +106,7 @@
             document.getElementById('nav-title').innerText = "Loading...";
             document.getElementById('back-btn').style.visibility = 'visible';
 
-            // Load local repository asset directly
+            // Clean local extraction execution
             book = ePub(fileName);
             rendition = book.renderTo("reader-view", {
                 width: "100%",
@@ -122,7 +123,7 @@
                 document.getElementById('reader-view').style.display = 'block';
                 document.getElementById('nav-title').innerText = bookTitle;
             }).catch(function(err) {
-                document.getElementById('loading').innerText = "Error loading book formatting structural values.";
+                document.getElementById('loading').innerText = "Error parsing file format structures.";
                 console.error(err);
             });
         }
