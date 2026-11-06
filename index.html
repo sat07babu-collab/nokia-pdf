@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
-    <script src="https://cloudflare.com"></script>
+    <!-- FIXED: Using the accurate jsDelivr CDN engine for ePub rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -55,26 +56,29 @@
             height: calc(100vh - 40px);
             background: #1a1a1a;
         }
+        #loading {
+            display: none;
+            color: #00bc8c;
+            font-size: 14px;
+            margin-top: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
     <div class="header" id="nav-title">My Digital Bookshelf</div>
     
-    <!-- LIBRARY CONTAINER INTERFACE -->
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
         
-        <!-- Clickable book list entry linking to your raw asset URL path -->
+        <!-- Points to your raw GitHub file link -->
         <div class="book-item" tabindex="0" onclick="openBook('https://githubusercontent.com', 'Livewired')">
-            📖 1. Livewired (David Eagleman)
+            Option 1: Click to Load Livewired
         </div>
-        
-        <!-- Template row to easily add more items in the future -->
-        <!-- <div class="book-item" tabindex="0" onclick="openBook('URL_HERE', 'BOOK_TITLE')">📖 2. Second Book Name</div> -->
     </div>
 
-    <!-- BOOK VIEW CANVAS -->
+    <div id="loading">Unpacking chapters... please wait.</div>
     <div id="reader-view"></div>
 
     <script>
@@ -82,13 +86,15 @@
         var rendition = null;
 
         function openBook(epubUrl, bookTitle) {
-            // Swap display states to show text canvas
             document.getElementById('library-view').style.display = 'none';
-            document.getElementById('reader-view').style.display = 'block';
-            document.getElementById('nav-title').innerText = bookTitle;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('nav-title').innerText = "Loading Book...";
+
+            // Bypasses the GitHub server security block
+            var proxiedUrl = "https://corsproxy.io?" + encodeURIComponent(epubUrl);
             
-            // Spin up parsing engine configurations
-            book = ePub(epubUrl);
+            // Fire up the rendering engine configurations
+            book = ePub(proxiedUrl);
             rendition = book.renderTo("reader-view", {
                 width: "100%",
                 height: "100%",
@@ -96,21 +102,26 @@
             });
 
             rendition.themes.default({
-                "body": { "color": "#e0e0e0", "background": "#1a1a1a", "font-size": "14px", "line-height": "1.5" },
-                "p": { "margin": "0 0 1rem 0" }
+                "body": { "color": "#e0e0e0", "background": "#1a1a1a", "font-size": "14px", "line-height": "1.5" }
             });
 
-            rendition.display();
+            rendition.display().then(function() {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('reader-view').style.display = 'block';
+                document.getElementById('nav-title').innerText = bookTitle;
+            }).catch(function(err) {
+                document.getElementById('loading').innerText = "Parsing Error. Please check file formatting.";
+                console.error(err);
+            });
         }
 
-        // Feature phone physical keyboard mapping controls
+        // Nokia 215 Keypad navigation mapping settings
         document.addEventListener('keydown', function(e) {
-            // Handle directional scrolling within open pages
             if (rendition && document.getElementById('reader-view').style.display === 'block') {
                 if (e.keyCode === 40 || e.key === 'ArrowDown') {
-                    window.scrollBy(0, 60);
+                    window.scrollBy(0, 80);
                 } else if (e.keyCode === 38 || e.key === 'ArrowUp') {
-                    window.scrollBy(0, -60);
+                    window.scrollBy(0, -80);
                 }
             }
         });
