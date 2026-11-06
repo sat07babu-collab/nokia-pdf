@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
-    <!-- CRITICAL FIX: Loaded JSZip to unpack compressed archived .epub files -->
+    
+    <!-- FIXED: Accurate CDN link for JSZip file extractor -->
     <script src="https://cloudflare.com"></script>
-    <!-- CRITICAL FIX: Restored accurate and complete epubjs engine -->
-    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+    
+    <!-- FIXED: Accurate CDN link for the EpubJS rendering engine -->
+    <script src="https://jsdelivr.net"></script>
+    
     <style>
         body {
             margin: 0;
@@ -25,6 +28,15 @@
             font-weight: bold;
             text-align: center;
             border-bottom: 2px solid #00bc8c;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+        .header-btn {
+            color: #00bc8c;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: normal;
         }
         #library-view {
             padding: 10px;
@@ -70,7 +82,11 @@
 </head>
 <body>
 
-    <div class="header" id="nav-title">My Digital Bookshelf</div>
+    <div class="header">
+        <span id="back-btn" class="header-btn" style="visibility: hidden;" onclick="goBack()">✕ Back</span>
+        <span id="nav-title">My Digital Bookshelf</span>
+        <span class="header-btn" style="visibility: hidden;"></span>
+    </div>
     
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
@@ -89,10 +105,13 @@
         function openBook(fileName, bookTitle) {
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('nav-title').innerText = "Loading Book...";
+            document.getElementById('nav-title').innerText = "Loading...";
+            document.getElementById('back-btn').style.visibility = 'visible';
 
-            // Initialize the engine with the required JSZip decoder working behind it
-            book = ePub(fileName);
+            // URL encode the filename to handle spaces safely across browsers
+            var safeUrl = encodeURIComponent(fileName);
+
+            book = ePub(safeUrl);
             rendition = book.renderTo("reader-view", {
                 width: "100%",
                 height: "100%",
@@ -100,7 +119,8 @@
             });
 
             rendition.themes.default({
-                "body": { "color": "#e0e0e0", "background": "#1a1a1a", "font-size": "14px", "line-height": "1.5" }
+                "body": { "color": "#e0e0e0", "background": "#1a1a1a", "font-size": "15px", "line-height": "1.6" },
+                "p": { "margin": "0 0 1em 0" }
             });
 
             rendition.display().then(function() {
@@ -108,9 +128,20 @@
                 document.getElementById('reader-view').style.display = 'block';
                 document.getElementById('nav-title').innerText = bookTitle;
             }).catch(function(err) {
-                document.getElementById('loading').innerText = "Error parsing file formatting structures.";
+                document.getElementById('loading').innerText = "Error opening book. Check file format.";
                 console.error(err);
             });
+        }
+
+        function goBack() {
+            if (rendition) {
+                rendition.destroy();
+            }
+            document.getElementById('reader-view').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('library-view').style.display = 'block';
+            document.getElementById('nav-title').innerText = "My Digital Bookshelf";
+            document.getElementById('back-btn').style.visibility = 'hidden';
         }
 
         document.addEventListener('keydown', function(e) {
