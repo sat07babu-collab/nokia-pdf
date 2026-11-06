@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
     
-    <script src="jszip.min.js"></script>
-    <script src="epub.min.js"></script>
-    
     <style>
         body {
             margin: 0; padding: 0;
@@ -33,39 +30,30 @@
         .section-title { font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         .book-item { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #fff; }
         
-        /* SCROLLED READER AREA */
+        /* READER AREA */
         #reader-container { 
             display: none; width: 240px; height: 285px; position: relative; background: #1a1a1a; 
         }
-        #reader-view { 
-            width: 240px !important; 
-            height: 245px !important; 
+        #book-content { 
+            width: 220px; 
+            height: 245px; 
             background: #1a1a1a; 
-            position: absolute; top: 0; left: 0; z-index: 5; 
-            overflow-y: auto !important; /* Allows scrolling inside the book */
-            -webkit-overflow-scrolling: touch;
+            color: #e0e0e0;
+            padding: 10px; 
+            box-sizing: border-box;
+            overflow-y: auto; 
+            font-size: 14px; 
+            line-height: 1.5;
+            position: absolute; top: 0; left: 0;
         }
-        #reader-view iframe { 
-            width: 220px !important; /* Slightly smaller to prevent horizontal scrollbars */
-            min-height: 1000px !important; 
-            border: none !important; 
-            margin: 0 auto;
-            display: block;
-        }
+        /* Make images fit the small screen */
+        #book-content img { max-width: 100%; height: auto; }
         
-        /* BOTTOM STATUS BAR */
         #status-bar {
             position: absolute; bottom: 0; left: 0; width: 240px; height: 40px;
             background: #1f1f1f; border-top: 1px solid #333;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 10px; box-sizing: border-box; z-index: 10;
+            display: flex; justify-content: center; align-items: center;
             font-size: 10px; color: #888;
-        }
-        
-        #toast {
-            display: none; position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 188, 140, 0.9); color: #000; padding: 6px 12px; border-radius: 4px;
-            font-size: 12px; font-weight: bold; z-index: 30; pointer-events: none;
         }
         
         #loading { display: none; color: #00bc8c; font-size: 14px; margin-top: 100px; text-align: center; width: 240px; }
@@ -81,29 +69,19 @@
     
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
-        <div class="book-item" tabindex="0" onclick="openBook('book.epub', 'Livewired')">
+        <div class="book-item" tabindex="0" onclick="openBook('book.html', 'Livewired')">
             📖 1. Livewired (David Eagleman)
         </div>
     </div>
 
-    <div id="loading">Unpacking book... please wait.</div>
+    <div id="loading">Loading book... please wait.</div>
     
     <div id="reader-container">
-        <div id="reader-view" tabindex="0"></div>
-        <div id="status-bar">
-            <span id="chapter-title">Cover</span>
-            <span id="font-size-display">14px</span>
-        </div>
+        <div id="book-content" tabindex="0"></div>
+        <div id="status-bar">Use 2/8 to scroll</div>
     </div>
 
-    <div id="toast"></div>
-
     <script>
-        var book = null;
-        var rendition = null;
-        var fontSizes = [12, 14, 16, 18, 20, 22];
-        var currentFontIndex = 1;
-
         function openBook(fileName, bookTitle) {
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('reader-container').style.display = 'block';
@@ -111,78 +89,20 @@
             document.getElementById('nav-title').innerText = "Loading...";
             document.getElementById('back-btn').style.visibility = 'visible';
 
-            if (typeof JSZip === 'undefined' || typeof ePub === 'undefined') {
-                document.getElementById('loading').innerText = "Libraries failed.";
-                return;
-            }
-
-            try {
-                book = ePub(fileName);
-                
-                // CRITICAL CHANGE: Switched to 'scrolled-doc' for reliable reading
-                rendition = book.renderTo("reader-view", {
-                    width: 240, 
-                    height: 245, 
-                    flow: "scrolled-doc", 
-                    allowScriptedContent: true
-                });
-
-                applyTheme();
-
-                rendition.display().then(function() {
+            // Simply fetch the HTML file and put it in the div!
+            fetch(fileName)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('book-content').innerHTML = html;
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('nav-title').innerText = bookTitle;
-                    
-                    // Track chapter changes
-                    book.locations.generate(1000).then(function() {
-                        rendition.on("relocated", function(location) {
-                            if(location.start.displayed) {
-                                document.getElementById('chapter-title').innerText = location.start.displayed.page + " / " + location.start.displayed.total;
-                            }
-                        });
-                    });
-                    
-                    setTimeout(function() { rendition.resize(240, 245); }, 500);
-                }).catch(function(err) {
-                    document.getElementById('loading').innerText = "Error: " + err.message;
+                })
+                .catch(err => {
+                    document.getElementById('loading').innerText = "Error loading file.";
                 });
-            } catch (err) {
-                document.getElementById('loading').innerText = "System error.";
-            }
-        }
-
-        function applyTheme() {
-            if(rendition) {
-                rendition.themes.default({
-                    "body": { 
-                        "color": "#e0e0e0", "background": "#1a1a1a", 
-                        "font-size": fontSizes[currentFontIndex] + "px", 
-                        "line-height": "1.5", "padding": "10px", "margin": "0",
-                        "max-width": "220px"
-                    },
-                    "img": { "max-width": "100% !important", "height": "auto !important" }
-                });
-                document.getElementById('font-size-display').innerText = fontSizes[currentFontIndex] + "px";
-            }
-        }
-
-        function adjustFont(direction) {
-            if (!rendition) return;
-            if (direction === 1 && currentFontIndex < fontSizes.length - 1) currentFontIndex++;
-            else if (direction === -1 && currentFontIndex > 0) currentFontIndex--;
-            applyTheme();
-            showToast("Font: " + fontSizes[currentFontIndex] + "px");
-        }
-
-        function showToast(msg) {
-            var toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.style.display = 'block';
-            setTimeout(function() { toast.style.display = 'none'; }, 1500);
         }
 
         function goBack() {
-            if (rendition) { rendition.destroy(); rendition = null; book = null; }
             document.getElementById('reader-container').style.display = 'none';
             document.getElementById('loading').style.display = 'none';
             document.getElementById('library-view').style.display = 'block';
@@ -190,38 +110,19 @@
             document.getElementById('back-btn').style.visibility = 'hidden';
         }
 
-        // --- KEYPAD MAPPING FOR SCROLLED MODE ---
+        // Simple Keypad Scrolling
         window.addEventListener('keydown', function(e) {
-            if (!rendition) return;
-            
+            var content = document.getElementById('book-content');
             var key = e.key;
             var code = e.keyCode;
 
-            // 8 / Down Arrow: Scroll Down (Read Next)
+            // 8 or Down: Scroll Down
             if (key === '8' || code === 40) {
-                document.getElementById('reader-view').scrollBy(0, 200);
+                content.scrollBy(0, 150);
             }
-            // 2 / Up Arrow: Scroll Up (Read Previous)
+            // 2 or Up: Scroll Up
             else if (key === '2' || code === 38) {
-                document.getElementById('reader-view').scrollBy(0, -200);
-            }
-            // 6 / Right Arrow: Jump to Next Chapter
-            else if (key === '6' || code === 39) {
-                rendition.next();
-                showToast("Next Chapter");
-            }
-            // 4 / Left Arrow: Jump to Previous Chapter
-            else if (key === '4' || code === 37) {
-                rendition.prev();
-                showToast("Prev Chapter");
-            }
-            // # : Zoom In
-            else if (key === '#' || code === 35) {
-                adjustFont(1);
-            }
-            // * : Zoom Out
-            else if (key === '*' || code === 106) {
-                adjustFont(-1);
+                content.scrollBy(0, -150);
             }
         }, true); 
     </script>
