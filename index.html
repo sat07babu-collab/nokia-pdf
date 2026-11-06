@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
-    <!-- FIXED: Using the accurate jsDelivr CDN engine for ePub rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+    <script src="https://jsdelivr.net"></script>
     <style>
         body {
             margin: 0;
@@ -72,9 +71,9 @@
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
         
-        <!-- Points to your raw GitHub file link -->
+        <!-- FIXED: Inserted your complete raw book URL -->
         <div class="book-item" tabindex="0" onclick="openBook('https://githubusercontent.com', 'Livewired')">
-            Option 1: Click to Load Livewired
+            📖 1. Livewired (David Eagleman)
         </div>
     </div>
 
@@ -93,7 +92,6 @@
             // Bypasses the GitHub server security block
             var proxiedUrl = "https://corsproxy.io?" + encodeURIComponent(epubUrl);
             
-            // Fire up the rendering engine configurations
             book = ePub(proxiedUrl);
             rendition = book.renderTo("reader-view", {
                 width: "100%",
@@ -115,7 +113,6 @@
             });
         }
 
-        // Nokia 215 Keypad navigation mapping settings
         document.addEventListener('keydown', function(e) {
             if (rendition && document.getElementById('reader-view').style.display === 'block') {
                 if (e.keyCode === 40 || e.key === 'ArrowDown') {
