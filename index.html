@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
-    <!-- FIXED: Correct complete library script path -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- CRITICAL FIX: Loaded JSZip to unpack compressed archived .epub files -->
+    <script src="https://cloudflare.com"></script>
+    <!-- CRITICAL FIX: Restored accurate and complete epubjs engine -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -55,6 +57,7 @@
             width: 100vw;
             height: calc(100vh - 40px);
             background: #1a1a1a;
+            overflow-y: auto;
         }
         #loading {
             display: none;
@@ -71,8 +74,6 @@
     
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
-        
-        <!-- FIXED: Using local relative path to completely bypass security blocks -->
         <div class="book-item" tabindex="0" onclick="openBook('Livewired The Inside Story of the Ever-Changing Brain (David Eagleman) (z-library.sk, 1lib.sk, z-lib.sk).epub', 'Livewired')">
             📖 1. Livewired (David Eagleman)
         </div>
@@ -90,7 +91,7 @@
             document.getElementById('loading').style.display = 'block';
             document.getElementById('nav-title').innerText = "Loading Book...";
 
-            // Load directly from your repository files without cross-origin blocks
+            // Initialize the engine with the required JSZip decoder working behind it
             book = ePub(fileName);
             rendition = book.renderTo("reader-view", {
                 width: "100%",
@@ -107,12 +108,11 @@
                 document.getElementById('reader-view').style.display = 'block';
                 document.getElementById('nav-title').innerText = bookTitle;
             }).catch(function(err) {
-                document.getElementById('loading').innerText = "Error parsing file code.";
+                document.getElementById('loading').innerText = "Error parsing file formatting structures.";
                 console.error(err);
             });
         }
 
-        // Keypad pagination matching configurations
         document.addEventListener('keydown', function(e) {
             if (rendition && document.getElementById('reader-view').style.display === 'block') {
                 if (e.keyCode === 40 || e.key === 'ArrowDown') {
