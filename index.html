@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nokia Cloud EPUB Reader</title>
-    <!-- Include a lightweight, streaming EPUB parsing engine -->
+    <title>Nokia Digital Bookshelf</title>
     <script src="https://cloudflare.com"></script>
     <style>
         body {
@@ -13,7 +12,7 @@
             background-color: #121212;
             color: #e0e0e0;
             font-family: -apple-system, sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
         }
         .header {
             background-color: #1f1f1f;
@@ -24,89 +23,95 @@
             text-align: center;
             border-bottom: 2px solid #00bc8c;
         }
-        .input-area {
-            padding: 6px;
-            background-color: #1a1a1a;
-            display: flex;
-            gap: 4px;
+        #library-view {
+            padding: 10px;
         }
-        input {
-            flex: 1;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 4px 6px;
-            font-size: 11px;
-            border-radius: 4px;
+        .section-title {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        button {
-            background: #00bc8c;
-            color: #fff;
-            border: none;
-            padding: 4px 10px;
-            font-size: 11px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        #viewer {
-            width: 100vw;
-            height: calc(100vh - 78px);
+        .book-item {
             background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
         }
-        /* Style the inside of the book container */
-        .epub-container {
-            padding: 10px !important;
+        .book-item:focus {
+            background: #00bc8c;
+            border-color: #fff;
+            outline: none;
+        }
+        #reader-view {
+            display: none;
+            width: 100vw;
+            height: calc(100vh - 40px);
+            background: #1a1a1a;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">Cloud EPUB Reader</div>
+    <div class="header" id="nav-title">My Digital Bookshelf</div>
     
-    <div class="input-area">
-        <input type="text" id="bookUrl" placeholder="Paste .epub URL here" value="https://epubjs.org">
-        <button onclick="loadBook()">Open</button>
+    <!-- LIBRARY CONTAINER INTERFACE -->
+    <div id="library-view">
+        <div class="section-title">Select an E-Book:</div>
+        
+        <!-- Clickable book list entry linking to your raw asset URL path -->
+        <div class="book-item" tabindex="0" onclick="openBook('https://githubusercontent.com', 'Livewired')">
+            📖 1. Livewired (David Eagleman)
+        </div>
+        
+        <!-- Template row to easily add more items in the future -->
+        <!-- <div class="book-item" tabindex="0" onclick="openBook('URL_HERE', 'BOOK_TITLE')">📖 2. Second Book Name</div> -->
     </div>
 
-    <div id="viewer"></div>
+    <!-- BOOK VIEW CANVAS -->
+    <div id="reader-view"></div>
 
     <script>
         var book = null;
         var rendition = null;
 
-        function loadBook() {
-            var url = document.getElementById('bookUrl').value.trim();
-            if(!url) return;
+        function openBook(epubUrl, bookTitle) {
+            // Swap display states to show text canvas
+            document.getElementById('library-view').style.display = 'none';
+            document.getElementById('reader-view').style.display = 'block';
+            document.getElementById('nav-title').innerText = bookTitle;
             
-            document.getElementById('viewer').innerHTML = ""; // Reset canvas
-            
-            // Initialize the EPUB engine
-            book = ePub(url);
-            rendition = book.renderTo("viewer", {
+            // Spin up parsing engine configurations
+            book = ePub(epubUrl);
+            rendition = book.renderTo("reader-view", {
                 width: "100%",
                 height: "100%",
-                flow: "scrolled-doc" // Single continuous scrolling column optimal for Nokia layout
+                flow: "scrolled-doc"
             });
 
-            // Set eye-friendly themes matching our dark UI
             rendition.themes.default({
                 "body": { "color": "#e0e0e0", "background": "#1a1a1a", "font-size": "14px", "line-height": "1.5" },
-                "p": { "margin": "0 0 1em 0" }
+                "p": { "margin": "0 0 1rem 0" }
             });
 
             rendition.display();
         }
 
-        // Initialize with public template book on window launch
-        window.onload = loadBook;
-
-        // Keypad pagination optimization for physical feature phones
+        // Feature phone physical keyboard mapping controls
         document.addEventListener('keydown', function(e) {
-            if (!rendition) return;
-            if (e.keyCode === 40 || e.key === 'ArrowDown') {
-                window.scrollBy(0, 60); // Down arrow scrolls text down smoothly
-            } else if (e.keyCode === 38 || e.key === 'ArrowUp') {
-                window.scrollBy(0, -60); // Up arrow scrolls text up smoothly
+            // Handle directional scrolling within open pages
+            if (rendition && document.getElementById('reader-view').style.display === 'block') {
+                if (e.keyCode === 40 || e.key === 'ArrowDown') {
+                    window.scrollBy(0, 60);
+                } else if (e.keyCode === 38 || e.key === 'ArrowUp') {
+                    window.scrollBy(0, -60);
+                }
             }
         });
     </script>
