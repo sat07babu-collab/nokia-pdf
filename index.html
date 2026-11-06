@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
     
-    <!-- Using jsDelivr CDN - more reliable for restricted environments -->
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+    <!-- Try loading from GitHub raw content -->
+    <script src="https://raw.githack.com/sat07babu-collab/nokia-pdf/main/jszip.min.js"></script>
+    <script src="https://raw.githack.com/sat07babu-collab/nokia-pdf/main/epub.min.js"></script>
     
     <style>
         body {
@@ -76,6 +76,12 @@
             margin-top: 20px;
             text-align: center;
         }
+        #error-debug {
+            color: #ff6b6b;
+            font-size: 12px;
+            padding: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -94,34 +100,44 @@
     </div>
 
     <div id="loading">Loading book... please wait.</div>
+    <div id="error-debug"></div>
     <div id="reader-view"></div>
 
     <script>
         var book = null;
         var rendition = null;
 
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("Page loaded. Checking libraries...");
-            console.log("JSZip loaded:", typeof JSZip !== 'undefined');
-            console.log("ePub loaded:", typeof ePub !== 'undefined');
+        // Check script loading on page load
+        window.addEventListener('load', function() {
+            var debugDiv = document.getElementById('error-debug');
+            if (typeof JSZip === 'undefined') {
+                debugDiv.innerHTML = "⚠️ JSZip library not loaded<br>CDN blocked or offline";
+            }
+            if (typeof ePub === 'undefined') {
+                debugDiv.innerHTML += (debugDiv.innerHTML ? "<br>" : "") + "⚠️ Epub.js library not loaded<br>CDN blocked or offline";
+            }
+            if (typeof JSZip !== 'undefined' && typeof ePub !== 'undefined') {
+                debugDiv.innerHTML = "✅ All libraries loaded successfully";
+            }
         });
 
         function openBook(fileName, bookTitle) {
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-debug').style.display = 'none';
             document.getElementById('nav-title').innerText = "Loading...";
             document.getElementById('back-btn').style.visibility = 'visible';
 
-            // Check if libraries loaded
             if (typeof JSZip === 'undefined') {
-                document.getElementById('loading').innerText = "Error: JSZip not loaded. Check internet connection.";
-                console.error("JSZip failed to load from CDN");
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-debug').style.display = 'block';
+                document.getElementById('error-debug').innerHTML = "❌ Cannot load book:<br>JSZip library is blocked<br>Please check internet connection";
                 return;
             }
             if (typeof ePub === 'undefined') {
-                document.getElementById('loading').innerText = "Error: Epub.js not loaded. Check internet connection.";
-                console.error("ePub.js failed to load from CDN");
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-debug').style.display = 'block';
+                document.getElementById('error-debug').innerHTML = "❌ Cannot load book:<br>Epub.js library is blocked<br>Please check internet connection";
                 return;
             }
 
@@ -140,23 +156,24 @@
                         "color": "#e0e0e0", 
                         "background": "#1a1a1a", 
                         "font-size": "16px", 
-                        "line-height": "1.6",
-                        "padding": "10px"
+                        "line-height": "1.6"
                     }
                 });
 
                 rendition.display().then(function() {
-                    console.log("Book displayed successfully!");
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('reader-view').style.display = 'block';
                     document.getElementById('nav-title').innerText = bookTitle;
                 }).catch(function(err) {
-                    console.error("Display error:", err);
-                    document.getElementById('loading').innerText = "Error displaying book: " + err.message;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error-debug').style.display = 'block';
+                    document.getElementById('error-debug').innerHTML = "❌ Error loading book:<br>" + err.message;
+                    console.error("Epub error:", err);
                 });
             } catch (err) {
-                console.error("Initialization error:", err);
-                document.getElementById('loading').innerText = "Error: " + err.message;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-debug').style.display = 'block';
+                document.getElementById('error-debug').innerHTML = "❌ Error:<br>" + err.message;
             }
         }
 
@@ -168,6 +185,7 @@
             }
             document.getElementById('reader-view').style.display = 'none';
             document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-debug').style.display = 'none';
             document.getElementById('library-view').style.display = 'block';
             document.getElementById('nav-title').innerText = "My Digital Bookshelf";
             document.getElementById('back-btn').style.visibility = 'hidden';
