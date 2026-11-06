@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
+    <!-- FIXED: Correct complete library script path -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body {
@@ -71,8 +72,8 @@
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
         
-        <!-- FIXED: Inserted your complete raw book URL -->
-        <div class="book-item" tabindex="0" onclick="openBook('https://githubusercontent.com', 'Livewired')">
+        <!-- FIXED: Using local relative path to completely bypass security blocks -->
+        <div class="book-item" tabindex="0" onclick="openBook('Livewired The Inside Story of the Ever-Changing Brain (David Eagleman) (z-library.sk, 1lib.sk, z-lib.sk).epub', 'Livewired')">
             📖 1. Livewired (David Eagleman)
         </div>
     </div>
@@ -84,15 +85,13 @@
         var book = null;
         var rendition = null;
 
-        function openBook(epubUrl, bookTitle) {
+        function openBook(fileName, bookTitle) {
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
             document.getElementById('nav-title').innerText = "Loading Book...";
 
-            // Bypasses the GitHub server security block
-            var proxiedUrl = "https://corsproxy.io?" + encodeURIComponent(epubUrl);
-            
-            book = ePub(proxiedUrl);
+            // Load directly from your repository files without cross-origin blocks
+            book = ePub(fileName);
             rendition = book.renderTo("reader-view", {
                 width: "100%",
                 height: "100%",
@@ -108,11 +107,12 @@
                 document.getElementById('reader-view').style.display = 'block';
                 document.getElementById('nav-title').innerText = bookTitle;
             }).catch(function(err) {
-                document.getElementById('loading').innerText = "Parsing Error. Please check file formatting.";
+                document.getElementById('loading').innerText = "Error parsing file code.";
                 console.error(err);
             });
         }
 
+        // Keypad pagination matching configurations
         document.addEventListener('keydown', function(e) {
             if (rendition && document.getElementById('reader-view').style.display === 'block') {
                 if (e.keyCode === 40 || e.key === 'ArrowDown') {
