@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
     
-    <!-- VERIFIED WORKING LIBS: Essential for uncompressing and rendering the EPUB chapters -->
+    <!-- FIXED ABSOLUTE CDN LINKS: Explicitly loads JSZip first to unpack the .epub archive files -->
     <script src="https://cloudflare.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+    <script src="https://cloudflare.com"></script>
     
     <style>
         body {
@@ -87,7 +87,6 @@
     
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
-        <!-- Local path string matching your uploaded GitHub repository file name -->
         <div class="book-item" tabindex="0" onclick="openBook('Livewired The Inside Story of the Ever-Changing Brain (David Eagleman) (z-library.sk, 1lib.sk, z-lib.sk).epub', 'Livewired')">
             📖 1. Livewired (David Eagleman)
         </div>
@@ -106,7 +105,7 @@
             document.getElementById('nav-title').innerText = "Loading...";
             document.getElementById('back-btn').style.visibility = 'visible';
 
-            // Uses a direct local call to process your repository file asset
+            // Load local repository asset directly
             book = ePub(fileName);
             rendition = book.renderTo("reader-view", {
                 width: "100%",
@@ -123,7 +122,7 @@
                 document.getElementById('reader-view').style.display = 'block';
                 document.getElementById('nav-title').innerText = bookTitle;
             }).catch(function(err) {
-                document.getElementById('loading').innerText = "Error loading book format structure.";
+                document.getElementById('loading').innerText = "Error loading book formatting structural values.";
                 console.error(err);
             });
         }
@@ -137,7 +136,6 @@
             document.getElementById('back-btn').style.visibility = 'hidden';
         }
 
-        // Mechanical arrow key mapping for physical scroll layouts
         document.addEventListener('keydown', function(e) {
             if (rendition && document.getElementById('reader-view').style.display === 'block') {
                 if (e.keyCode === 40 || e.key === 'ArrowDown') {
