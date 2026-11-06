@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia Digital Bookshelf</title>
     
-    <!-- LOCAL FILES -->
     <script src="jszip.min.js"></script>
     <script src="epub.min.js"></script>
     
@@ -34,43 +33,39 @@
         .section-title { font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         .book-item { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #fff; }
         
-        /* READER AREA */
-        #reader-container { display: none; width: 240px; height: 285px; position: relative; background: #1a1a1a; }
-        #reader-view { width: 240px !important; height: 245px !important; background: #1a1a1a; position: absolute; top: 0; left: 0; z-index: 5; }
-        #reader-view iframe { width: 240px !important; height: 245px !important; border: none !important; }
+        /* SCROLLED READER AREA */
+        #reader-container { 
+            display: none; width: 240px; height: 285px; position: relative; background: #1a1a1a; 
+        }
+        #reader-view { 
+            width: 240px !important; 
+            height: 245px !important; 
+            background: #1a1a1a; 
+            position: absolute; top: 0; left: 0; z-index: 5; 
+            overflow-y: auto !important; /* Allows scrolling inside the book */
+            -webkit-overflow-scrolling: touch;
+        }
+        #reader-view iframe { 
+            width: 220px !important; /* Slightly smaller to prevent horizontal scrollbars */
+            min-height: 1000px !important; 
+            border: none !important; 
+            margin: 0 auto;
+            display: block;
+        }
         
-        /* CONTROLS */
-        #page-controls {
+        /* BOTTOM STATUS BAR */
+        #status-bar {
             position: absolute; bottom: 0; left: 0; width: 240px; height: 40px;
             background: #1f1f1f; border-top: 1px solid #333;
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 10px; box-sizing: border-box; z-index: 10;
+            font-size: 10px; color: #888;
         }
-        .nav-btn { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .nav-btn:active { background: #00bc8c; color: #000; }
         
-        /* TOC OVERLAY */
-        #toc-overlay {
-            display: none; position: absolute; top: 0; left: 0; width: 240px; height: 245px;
-            background: #1a1a1a; overflow-y: auto; z-index: 20; padding: 10px; box-sizing: border-box;
-        }
-        .toc-title { color: #00bc8c; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; font-size: 12px; }
-        .toc-item { padding: 8px 0; border-bottom: 1px solid #222; font-size: 12px; color: #ccc; cursor: pointer; }
-        .toc-item:active { color: #00bc8c; background: #222; }
-        
-        /* TOAST NOTIFICATION */
         #toast {
             display: none; position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 188, 140, 0.9); color: #000; padding: 6px 12px; border-radius: 4px;
-            font-size: 12px; font-weight: bold; z-index: 30; pointer-events: none; white-space: nowrap;
-        }
-        
-        /* KEY DEBUG DISPLAY */
-        #key-debug {
-            position: absolute; top: 35px; right: 0;
-            background: #333; color: #0f0;
-            font-size: 10px; padding: 2px 5px;
-            z-index: 50; display: none;
+            font-size: 12px; font-weight: bold; z-index: 30; pointer-events: none;
         }
         
         #loading { display: none; color: #00bc8c; font-size: 14px; margin-top: 100px; text-align: center; width: 240px; }
@@ -91,35 +86,23 @@
         </div>
     </div>
 
-    <div id="loading">Loading book... please wait.</div>
+    <div id="loading">Unpacking book... please wait.</div>
     
     <div id="reader-container">
-        <div id="key-debug">Key: -</div>
         <div id="reader-view" tabindex="0"></div>
-        
-        <!-- Table of Contents Overlay -->
-        <div id="toc-overlay">
-            <div class="toc-title">📑 Chapters (Press 5 to close)</div>
-            <div id="toc-list"></div>
-        </div>
-
-        <!-- Bottom Controls -->
-        <div id="page-controls">
-            <button class="nav-btn" onclick="turnPage(-1)">◀ Prev</button>
-            <span id="page-indicator" style="font-size:10px; color:#888;">Cover</span>
-            <button class="nav-btn" onclick="turnPage(1)">Next ▶</button>
+        <div id="status-bar">
+            <span id="chapter-title">Cover</span>
+            <span id="font-size-display">14px</span>
         </div>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast"></div>
 
     <script>
         var book = null;
         var rendition = null;
         var fontSizes = [12, 14, 16, 18, 20, 22];
-        var currentFontIndex = 1; // Starts at 14px
-        var isTocOpen = false;
+        var currentFontIndex = 1;
 
         function openBook(fileName, bookTitle) {
             document.getElementById('library-view').style.display = 'none';
@@ -129,15 +112,19 @@
             document.getElementById('back-btn').style.visibility = 'visible';
 
             if (typeof JSZip === 'undefined' || typeof ePub === 'undefined') {
-                document.getElementById('loading').innerText = "Libraries failed to load.";
+                document.getElementById('loading').innerText = "Libraries failed.";
                 return;
             }
 
             try {
                 book = ePub(fileName);
                 
+                // CRITICAL CHANGE: Switched to 'scrolled-doc' for reliable reading
                 rendition = book.renderTo("reader-view", {
-                    width: 240, height: 245, flow: "paginated"
+                    width: 240, 
+                    height: 245, 
+                    flow: "scrolled-doc", 
+                    allowScriptedContent: true
                 });
 
                 applyTheme();
@@ -146,17 +133,16 @@
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('nav-title').innerText = bookTitle;
                     
-                    // Force focus
-                    document.getElementById('reader-view').focus();
-                    document.body.focus();
+                    // Track chapter changes
+                    book.locations.generate(1000).then(function() {
+                        rendition.on("relocated", function(location) {
+                            if(location.start.displayed) {
+                                document.getElementById('chapter-title').innerText = location.start.displayed.page + " / " + location.start.displayed.total;
+                            }
+                        });
+                    });
                     
-                    // Load Table of Contents
-                    loadTOC();
-                    
-                    setTimeout(function() { 
-                        rendition.resize(240, 245);
-                        showToast("Book Loaded! Press 6/8 for Next");
-                    }, 500);
+                    setTimeout(function() { rendition.resize(240, 245); }, 500);
                 }).catch(function(err) {
                     document.getElementById('loading').innerText = "Error: " + err.message;
                 });
@@ -171,72 +157,28 @@
                     "body": { 
                         "color": "#e0e0e0", "background": "#1a1a1a", 
                         "font-size": fontSizes[currentFontIndex] + "px", 
-                        "line-height": "1.4", "padding": "5px", "margin": "0"
-                    }
+                        "line-height": "1.5", "padding": "10px", "margin": "0",
+                        "max-width": "220px"
+                    },
+                    "img": { "max-width": "100% !important", "height": "auto !important" }
                 });
-            }
-        }
-
-        function loadTOC() {
-            if (!book || !book.navigation) return;
-            var tocList = document.getElementById('toc-list');
-            tocList.innerHTML = '';
-            
-            book.navigation.toc.forEach(function(chapter) {
-                var div = document.createElement('div');
-                div.className = 'toc-item';
-                div.innerText = chapter.label.trim();
-                div.onclick = function() {
-                    rendition.display(chapter.href);
-                    toggleTOC();
-                };
-                tocList.appendChild(div);
-            });
-        }
-
-        function turnPage(direction) {
-            if (rendition && !isTocOpen) {
-                if (direction === 1) {
-                    rendition.next().catch(function(){});
-                } else {
-                    rendition.prev().catch(function(){});
-                }
-                document.getElementById('reader-view').focus();
+                document.getElementById('font-size-display').innerText = fontSizes[currentFontIndex] + "px";
             }
         }
 
         function adjustFont(direction) {
             if (!rendition) return;
-            if (direction === 1 && currentFontIndex < fontSizes.length - 1) {
-                currentFontIndex++;
-            } else if (direction === -1 && currentFontIndex > 0) {
-                currentFontIndex--;
-            }
+            if (direction === 1 && currentFontIndex < fontSizes.length - 1) currentFontIndex++;
+            else if (direction === -1 && currentFontIndex > 0) currentFontIndex--;
             applyTheme();
             showToast("Font: " + fontSizes[currentFontIndex] + "px");
-        }
-
-        function toggleTOC() {
-            if (!rendition) return;
-            isTocOpen = !isTocOpen;
-            document.getElementById('toc-overlay').style.display = isTocOpen ? 'block' : 'none';
-            if (isTocOpen) {
-                showToast("Chapters Menu Open");
-            }
         }
 
         function showToast(msg) {
             var toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.display = 'block';
-            setTimeout(function() { toast.style.display = 'none'; }, 2000);
-        }
-
-        function showKeyDebug(keyName) {
-            var debug = document.getElementById('key-debug');
-            debug.innerText = "Key: " + keyName;
-            debug.style.display = 'block';
-            setTimeout(function() { debug.style.display = 'none'; }, 500);
+            setTimeout(function() { toast.style.display = 'none'; }, 1500);
         }
 
         function goBack() {
@@ -246,75 +188,42 @@
             document.getElementById('library-view').style.display = 'block';
             document.getElementById('nav-title').innerText = "My Digital Bookshelf";
             document.getElementById('back-btn').style.visibility = 'hidden';
-            isTocOpen = false;
         }
 
-        // HANDLE KEY PRESSES - Multiple event types for compatibility
-        function handleKeyPress(e) {
+        // --- KEYPAD MAPPING FOR SCROLLED MODE ---
+        window.addEventListener('keydown', function(e) {
             if (!rendition) return;
             
             var key = e.key;
-            var code = e.keyCode || e.which;
-            
-            // Show what key was pressed (debug)
-            showKeyDebug(key + " (" + code + ")");
-            
-            // Prevent default to stop simulator from capturing
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // If TOC is open, only 5 closes it
-            if (isTocOpen) {
-                if (key === '5' || code === 53) {
-                    toggleTOC();
-                }
-                return;
-            }
+            var code = e.keyCode;
 
-            // === PAGE TURNING ===
-            // Next Page: 6, 8, 3, Right Arrow, Down Arrow
-            if (key === '6' || key === '8' || key === '3' || 
-                code === 39 || code === 40) { // Right or Down
-                turnPage(1);
+            // 8 / Down Arrow: Scroll Down (Read Next)
+            if (key === '8' || code === 40) {
+                document.getElementById('reader-view').scrollBy(0, 200);
             }
-            // Previous Page: 4, 2, 7, Left Arrow, Up Arrow
-            else if (key === '4' || key === '2' || key === '7' || 
-                     code === 37 || code === 38) { // Left or Up
-                turnPage(-1);
+            // 2 / Up Arrow: Scroll Up (Read Previous)
+            else if (key === '2' || code === 38) {
+                document.getElementById('reader-view').scrollBy(0, -200);
             }
-            // === ZOOM ===
-            // Zoom In: # (keyCode 35)
+            // 6 / Right Arrow: Jump to Next Chapter
+            else if (key === '6' || code === 39) {
+                rendition.next();
+                showToast("Next Chapter");
+            }
+            // 4 / Left Arrow: Jump to Previous Chapter
+            else if (key === '4' || code === 37) {
+                rendition.prev();
+                showToast("Prev Chapter");
+            }
+            // # : Zoom In
             else if (key === '#' || code === 35) {
                 adjustFont(1);
             }
-            // Zoom Out: * (keyCode 106 or 56)
-            else if (key === '*' || code === 106 || code === 56) {
+            // * : Zoom Out
+            else if (key === '*' || code === 106) {
                 adjustFont(-1);
             }
-            // === TABLE OF CONTENTS ===
-            // Press 5 (keyCode 53)
-            else if (key === '5' || code === 53) {
-                toggleTOC();
-            }
-            // === BACK ===
-            // Press 0 or Escape
-            else if (key === '0' || code === 48 || code === 27) {
-                goBack();
-            }
-        }
-
-        // Add multiple event listeners for maximum compatibility
-        document.addEventListener('keydown', handleKeyPress, true);
-        document.addEventListener('keypress', handleKeyPress, true);
-        document.addEventListener('keyup', handleKeyPress, true);
-        
-        // Also capture on the reader view
-        document.getElementById('reader-view').addEventListener('keydown', handleKeyPress, true);
-        document.getElementById('reader-view').addEventListener('keypress', handleKeyPress, true);
-        
-        // Capture on body
-        document.body.addEventListener('keydown', handleKeyPress, true);
-        document.body.addEventListener('keypress', handleKeyPress, true);
+        }, true); 
     </script>
 
 </body>
