@@ -90,8 +90,9 @@
     
     <div id="library-view">
         <div class="section-title">Select an E-Book:</div>
-        <!-- IMPORTANT: This filename must EXACTLY match the file in your repo, character for character -->
-        <div class="book-item" tabindex="0" onclick="openBook('Livewired The Inside Story of the Ever-Changing Brain (David Eagleman) (z-library.sk, 1lib.sk, z-lib.sk).epub', 'Livewired')">
+        
+        <!-- FIXED: Points exactly to 'book.epub' which exists in your repo -->
+        <div class="book-item" tabindex="0" onclick="openBook('book.epub', 'Livewired')">
             📖 1. Livewired (David Eagleman)
         </div>
     </div>
@@ -122,7 +123,9 @@
             }
 
             try {
-                // Initialize the book engine
+                console.log("Attempting to load:", fileName);
+                
+                // Initialize the book engine with the correct local file
                 book = ePub(fileName);
                 rendition = book.renderTo("reader-view", {
                     width: "100%",
@@ -138,8 +141,9 @@
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('reader-view').style.display = 'block';
                     document.getElementById('nav-title').innerText = bookTitle;
+                    console.log("Book loaded successfully!");
                 }).catch(function(err) {
-                    document.getElementById('loading').innerText = "Error: Could not find or parse the .epub file.";
+                    document.getElementById('loading').innerText = "Error: Could not find or parse 'book.epub'.";
                     console.error("Epub render error:", err);
                 });
             } catch (err) {
