@@ -15,23 +15,43 @@
             width: 240px; height: 320px;
         }
         #library-view { 
-            padding: 20px 10px; width: 240px; height: 320px; overflow-y: auto; box-sizing: border-box; 
+            padding: 10px; width: 240px; height: 320px; overflow-y: auto; box-sizing: border-box; 
         }
-        .section-title { font-size: 12px; color: #00bc8c; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .book-item { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 15px; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: bold; color: #fff; }
+        .section-title { font-size: 12px; color: #00bc8c; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        .book-item { 
+            background: #1a1a1a; border: 1px solid #333; border-radius: 6px; 
+            padding: 12px; margin-bottom: 8px; cursor: pointer; 
+            font-size: 14px; font-weight: bold; color: #fff; 
+        }
         .book-item:active { background: #00bc8c; color: #000; }
+        
+        /* Special style for the Chat button */
+        .chat-item {
+            background: #00332a; border: 1px solid #00bc8c; color: #00bc8c;
+        }
+        .chat-item:active { background: #00bc8c; color: #000; }
 
         #reader-container { 
             display: none; position: absolute; top: 0; left: 0; 
             width: 240px; height: 320px; background: #121212; z-index: 100; 
+            flex-direction: column;
         }
         #book-content { 
-            width: 240px; height: 320px; padding: 10px; box-sizing: border-box; 
+            flex: 1; padding: 10px; box-sizing: border-box; 
             overflow-y: auto; font-size: 14px; line-height: 1.5; color: #e0e0e0;
             white-space: normal; text-align: justify; text-justify: inter-word; word-wrap: break-word;
         }
         #book-content::-webkit-scrollbar { display: none; }
         #book-content { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Clickable Chat Button at bottom of reader */
+        #reader-chat-btn {
+            height: 30px; background: #1a1a1a; border-top: 1px solid #333;
+            color: #00bc8c; text-align: center; line-height: 30px;
+            font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+        #reader-chat-btn:active { background: #00bc8c; color: #000; }
 
         #toast {
             display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -43,14 +63,22 @@
 </head>
 <body>
 
+    <!-- Library Menu -->
     <div id="library-view">
         <div class="section-title">My Bookshelf</div>
         <div class="book-item" onclick="openBook('book.txt', 'book1')">📖 Livewired</div>
         <div class="book-item" onclick="openBook('book2.txt', 'book2')">📖 Book 2</div>
+        
+        <div class="section-title" style="margin-top: 20px;">Tools</div>
+        <!-- NEW: Clickable Chat Button in Menu -->
+        <div class="book-item chat-item" onclick="openChat()">💬 Open AI Chat</div>
     </div>
 
+    <!-- Fullscreen Reader -->
     <div id="reader-container">
         <div id="book-content" tabindex="0"></div>
+        <!-- NEW: Clickable Chat Button in Reader -->
+        <div id="reader-chat-btn" onclick="openChat()">💬 Open AI Chat</div>
     </div>
 
     <div id="toast"></div>
@@ -60,10 +88,18 @@
         var contentDiv = document.getElementById('book-content');
         var currentBookId = '';
 
+        // NEW: Function to open chat
+        function openChat() {
+            if (currentBookId) {
+                localStorage.setItem(currentBookId + '_scroll_pos', contentDiv.scrollTop);
+            }
+            window.location.href = 'chat.html';
+        }
+
         function openBook(fileName, bookId) {
             currentBookId = bookId;
             document.getElementById('library-view').style.display = 'none';
-            document.getElementById('reader-container').style.display = 'block';
+            document.getElementById('reader-container').style.display = 'flex';
 
             fetch(fileName)
                 .then(response => {
@@ -109,47 +145,20 @@
             currentBookId = '';
         }
 
-        // --- BULLETPROOF KEYPAD CONTROLS ---
-        // Attached to 'document' with capture=true to catch keys no matter what has focus
+        // Keypad controls (kept for 2, 8, *, #, 9)
         document.addEventListener('keydown', function(e) {
             var key = e.key;
-            var code = e.keyCode || e.which; // Fallback for older Nokia browsers
-            var isReaderOpen = document.getElementById('reader-container').style.display === 'block';
+            var code = e.keyCode || e.which;
+            var isReaderOpen = document.getElementById('reader-container').style.display === 'flex';
 
             if (isReaderOpen) {
                 var pageHeight = contentDiv.clientHeight - 10; 
 
-                if (key === '8' || code === 40) {
-                    contentDiv.scrollBy(0, pageHeight);
-                }
-                else if (key === '2' || code === 38) {
-                    contentDiv.scrollBy(0, -pageHeight);
-                }
-                else if (key === '#' || code === 35) {
-                    adjustFont(1);
-                }
-                else if (key === '*' || code === 106 || code === 42) {
-                    adjustFont(-1);
-                }
-                else if (key === '9' || code === 57) {
-                    goBack();
-                }
-                // NEW: Press 0 to open AI Chat
-                else if (key === '0' || code === 48) {
-                    e.preventDefault(); // Stop default behavior
-                    
-                    if (currentBookId) {
-                        localStorage.setItem(currentBookId + '_scroll_pos', contentDiv.scrollTop);
-                    }
-                    
-                    // Show visual feedback so you KNOW the key was pressed
-                    showToast("Opening Chat...");
-                    
-                    // Small delay so you can see the message before the page changes
-                    setTimeout(function() {
-                        window.location.href = 'chat.html';
-                    }, 600);
-                }
+                if (key === '8' || code === 40) { contentDiv.scrollBy(0, pageHeight); }
+                else if (key === '2' || code === 38) { contentDiv.scrollBy(0, -pageHeight); }
+                else if (key === '#' || code === 35) { adjustFont(1); }
+                else if (key === '*' || code === 106 || code === 42) { adjustFont(-1); }
+                else if (key === '9' || code === 57) { goBack(); }
             }
         }, true);
 
