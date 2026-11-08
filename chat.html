@@ -41,11 +41,11 @@
         #user-input:focus { border-color: #00bc8c; }
         
         #controls {
-            height: 24px; display: flex; border-top: 1px solid #333; background: #1e1e1e;
+            height: 30px; display: flex; border-top: 1px solid #333; background: #1e1e1e;
         }
         .btn {
-            flex: 1; text-align: center; line-height: 24px;
-            color: #00bc8c; font-size: 12px; font-weight: bold; cursor: pointer;
+            flex: 1; text-align: center; line-height: 30px;
+            color: #00bc8c; font-size: 13px; font-weight: bold; cursor: pointer;
         }
         .btn:active { background: #00bc8c; color: #000; }
         #send-btn { border-left: 1px solid #333; }
@@ -64,7 +64,8 @@
     </div>
 
     <div id="controls">
-        <div class="btn" onclick="goBack()">BACK (9)</div>
+        <!-- Bigger, clearer back button -->
+        <div class="btn" onclick="goBack()">⬅ BACK to Book</div>
         <div class="btn" id="send-btn" onclick="sendMessage()">SEND (5)</div>
     </div>
 
@@ -74,10 +75,9 @@
         
         window.onload = () => input.focus();
 
-        // Keypad Navigation
         window.addEventListener('keydown', function(e) {
             var key = e.key;
-            var code = e.keyCode;
+            var code = e.keyCode || e.which;
 
             if (document.activeElement === input) {
                 if (key === '5' || key === 'Enter' || code === 13) {
@@ -87,7 +87,6 @@
             } else {
                 if (key === '8' || code === 40) { chatBox.scrollTop += 60; }
                 if (key === '2' || code === 38) { chatBox.scrollTop -= 60; }
-                // NEW: Press 9 to go back to the book
                 if (key === '9' || code === 57) { goBack(); }
             }
         }, true);
@@ -121,7 +120,7 @@
             const lower = userText.toLowerCase();
             if (lower.includes('hello') || lower.includes('hi')) return "Hello there! How can I help you today?";
             if (lower.includes('time')) return "The current time is " + new Date().toLocaleTimeString();
-            if (lower.includes('book') || lower.includes('read')) return "Enjoying the book? Press 9 anytime to go back to reading!";
+            if (lower.includes('book') || lower.includes('read')) return "Enjoying the book? Click 'BACK to Book' anytime to return!";
             return "You said: '" + userText + "'.\n\n(Note: This is a simulated response. The UI is fully working!)";
         }
 
@@ -134,7 +133,6 @@
         }
 
         function goBack() {
-            // This instantly takes you back to the e-reader
             window.location.href = 'index.html';
         }
     </script>
