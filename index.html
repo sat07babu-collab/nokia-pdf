@@ -14,110 +14,92 @@
             overflow: hidden;
             width: 240px; height: 320px;
         }
-        .header {
-            background-color: #1f1f1f;
-            height: 35px; line-height: 35px;
-            font-size: 13px; font-weight: bold;
-            text-align: center;
-            border-bottom: 2px solid #00bc8c;
-            display: flex; justify-content: space-between;
-            padding: 0 8px; box-sizing: border-box;
-            width: 240px;
+        
+        /* LIBRARY VIEW */
+        #library-view { 
+            padding: 20px 10px; width: 240px; height: 320px; overflow-y: auto; box-sizing: border-box; 
         }
-        .header-btn { color: #00bc8c; cursor: pointer; font-size: 12px; }
-        
-        #library-view { padding: 10px; width: 240px; height: 285px; overflow-y: auto; }
-        .section-title { font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        .book-item { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #fff; }
-        
-        /* READER AREA */
+        .section-title { font-size: 12px; color: #00bc8c; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .book-item { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 15px; margin-bottom: 10px; cursor: pointer; font-size: 14px; font-weight: bold; color: #fff; }
+        .book-item:active { background: #00bc8c; color: #000; }
+
+        /* FULLSCREEN READER */
         #reader-container { 
-            display: none; width: 240px; height: 285px; position: relative; background: #1a1a1a; 
+            display: none; 
+            position: absolute; top: 0; left: 0; 
+            width: 240px; height: 320px; 
+            background: #121212; z-index: 100; 
         }
         #book-content { 
-            width: 220px; 
-            height: 245px; 
-            background: #1a1a1a; 
-            color: #e0e0e0;
-            padding: 10px; 
-            box-sizing: border-box;
+            width: 240px; height: 320px; 
+            padding: 15px; box-sizing: border-box;
             overflow-y: auto; 
-            font-size: 14px; 
-            line-height: 1.6;
-            position: absolute; top: 0; left: 0;
-            white-space: pre-wrap; /* Crucial: preserves paragraphs from TXT file */
-            word-wrap: break-word;
+            font-size: 14px; line-height: 1.6;
+            white-space: pre-wrap; word-wrap: break-word;
+            color: #e0e0e0;
         }
         
-        #status-bar {
-            position: absolute; bottom: 0; left: 0; width: 240px; height: 40px;
-            background: #1f1f1f; border-top: 1px solid #333;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 10px; color: #888;
-        }
-        
-        #loading { display: none; color: #00bc8c; font-size: 14px; margin-top: 100px; text-align: center; width: 240px; }
+        /* Hide scrollbar for clean full-screen look */
+        #book-content::-webkit-scrollbar { display: none; }
+        #book-content { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Subtle Toast for Zoom feedback */
         #toast {
-            display: none; position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 188, 140, 0.9); color: #000; padding: 6px 12px; border-radius: 4px;
-            font-size: 12px; font-weight: bold; z-index: 30; pointer-events: none;
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8); color: #00bc8c; padding: 10px 20px; border-radius: 20px;
+            font-size: 14px; font-weight: bold; z-index: 200; pointer-events: none;
+            border: 1px solid #00bc8c;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <span id="back-btn" class="header-btn" style="visibility: hidden;" onclick="goBack()">✕ Back</span>
-        <span id="nav-title">My Digital Bookshelf</span>
-        <span class="header-btn" style="visibility: hidden;"></span>
-    </div>
-    
+    <!-- Library Menu -->
     <div id="library-view">
-        <div class="section-title">Select an E-Book:</div>
-        <div class="book-item" tabindex="0" onclick="openBook('book.txt', 'Livewired')">
-            📖 1. Livewired (David Eagleman)
+        <div class="section-title">My Bookshelf</div>
+        <div class="book-item" onclick="openBook('book.txt')">
+            📖 Livewired
         </div>
     </div>
 
-    <div id="loading">Loading text... please wait.</div>
-    
+    <!-- Fullscreen Reader -->
     <div id="reader-container">
         <div id="book-content" tabindex="0"></div>
-        <div id="status-bar">2/8 to scroll | #/* to zoom</div>
     </div>
 
+    <!-- Zoom Feedback -->
     <div id="toast"></div>
 
     <script>
         var currentFontSize = 14;
+        var contentDiv = document.getElementById('book-content');
 
-        function openBook(fileName, bookTitle) {
+        function openBook(fileName) {
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('reader-container').style.display = 'block';
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('nav-title').innerText = "Loading...";
-            document.getElementById('back-btn').style.visibility = 'visible';
 
-            // Fetch the raw text file
             fetch(fileName)
-                .then(response => {
-                    if (!response.ok) throw new Error("File not found");
-                    return response.text();
-                })
+                .then(response => response.text())
                 .then(text => {
-                    // Inject text safely
-                    document.getElementById('book-content').innerText = text;
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('nav-title').innerText = bookTitle;
+                    contentDiv.innerText = text;
                     applyFontSize();
+                    
+                    // RESTORE PROGRESS: Check if we have a saved scroll position
+                    var savedPos = localStorage.getItem('livewired_scroll_pos');
+                    if (savedPos) {
+                        contentDiv.scrollTop = parseInt(savedPos);
+                    } else {
+                        contentDiv.scrollTop = 0;
+                    }
                 })
                 .catch(err => {
-                    document.getElementById('loading').innerText = "Error: Could not load book.txt. Did you upload it?";
+                    alert("Error loading book.txt");
+                    goBack();
                 });
         }
 
         function applyFontSize() {
-            document.getElementById('book-content').style.fontSize = currentFontSize + "px";
+            contentDiv.style.fontSize = currentFontSize + "px";
         }
 
         function adjustFont(direction) {
@@ -131,43 +113,51 @@
             var toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.display = 'block';
-            setTimeout(function() { toast.style.display = 'none'; }, 1200);
+            setTimeout(function() { toast.style.display = 'none'; }, 1000);
         }
 
         function goBack() {
+            // SAVE PROGRESS before leaving
+            localStorage.setItem('livewired_scroll_pos', contentDiv.scrollTop);
+            
             document.getElementById('reader-container').style.display = 'none';
-            document.getElementById('loading').style.display = 'none';
             document.getElementById('library-view').style.display = 'block';
-            document.getElementById('nav-title').innerText = "My Digital Bookshelf";
-            document.getElementById('back-btn').style.visibility = 'hidden';
-            document.getElementById('book-content').scrollTop = 0; // Reset scroll
         }
 
         // --- KEYPAD CONTROLS ---
         window.addEventListener('keydown', function(e) {
-            var content = document.getElementById('book-content');
-            if (!content || document.getElementById('reader-container').style.display === 'none') return;
-
             var key = e.key;
             var code = e.keyCode;
+            var isReaderOpen = document.getElementById('reader-container').style.display === 'block';
 
-            // 8 or Down: Scroll Down
-            if (key === '8' || code === 40) {
-                content.scrollBy(0, 150);
+            if (isReaderOpen) {
+                // 8 or Down: Scroll Down
+                if (key === '8' || code === 40) {
+                    contentDiv.scrollBy(0, 150);
+                }
+                // 2 or Up: Scroll Up
+                else if (key === '2' || code === 38) {
+                    contentDiv.scrollBy(0, -150);
+                }
+                // # : Zoom In
+                else if (key === '#' || code === 35) {
+                    adjustFont(1);
+                }
+                // * : Zoom Out
+                else if (key === '*' || code === 106) {
+                    adjustFont(-1);
+                }
+                // 9 : Go Back to Library (Since there is no button)
+                else if (key === '9' || code === 57) {
+                    goBack();
+                }
             }
-            // 2 or Up: Scroll Up
-            else if (key === '2' || code === 38) {
-                content.scrollBy(0, -150);
-            }
-            // # : Zoom In
-            else if (key === '#' || code === 35) {
-                adjustFont(1);
-            }
-            // * : Zoom Out
-            else if (key === '*' || code === 106) {
-                adjustFont(-1);
-            }
-        }, true); 
+        }, true);
+
+        // Also save progress continuously while scrolling just in case
+        contentDiv.addEventListener('scroll', function() {
+            localStorage.setItem('livewired_scroll_pos', contentDiv.scrollTop);
+        });
     </script>
 
 </body>
