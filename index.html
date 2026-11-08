@@ -57,8 +57,15 @@
     <!-- Library Menu -->
     <div id="library-view">
         <div class="section-title">My Bookshelf</div>
-        <div class="book-item" onclick="openBook('book.txt')">
+        
+        <!-- Book 1 -->
+        <div class="book-item" onclick="openBook('book.txt', 'book1')">
             📖 Livewired
+        </div>
+        
+        <!-- Book 2 (Make sure you upload book2.txt to GitHub!) -->
+        <div class="book-item" onclick="openBook('book2.txt', 'book2')">
+            📖 Book 2
         </div>
     </div>
 
@@ -73,19 +80,25 @@
     <script>
         var currentFontSize = 14;
         var contentDiv = document.getElementById('book-content');
+        var currentBookId = ''; // Tracks which book is currently open
 
-        function openBook(fileName) {
+        function openBook(fileName, bookId) {
+            currentBookId = bookId; // Save the ID so we can save progress later
+            
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('reader-container').style.display = 'block';
 
             fetch(fileName)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) throw new Error("File not found");
+                    return response.text();
+                })
                 .then(text => {
                     contentDiv.innerText = text;
                     applyFontSize();
                     
-                    // RESTORE PROGRESS: Check if we have a saved scroll position
-                    var savedPos = localStorage.getItem('livewired_scroll_pos');
+                    // RESTORE PROGRESS: Check if we have a saved scroll position for THIS specific book
+                    var savedPos = localStorage.getItem(bookId + '_scroll_pos');
                     if (savedPos) {
                         contentDiv.scrollTop = parseInt(savedPos);
                     } else {
@@ -93,7 +106,7 @@
                     }
                 })
                 .catch(err => {
-                    alert("Error loading book.txt");
+                    alert("Error loading " + fileName + ". Did you upload it to GitHub?");
                     goBack();
                 });
         }
@@ -117,11 +130,14 @@
         }
 
         function goBack() {
-            // SAVE PROGRESS before leaving
-            localStorage.setItem('livewired_scroll_pos', contentDiv.scrollTop);
+            // SAVE PROGRESS for the specific book before leaving
+            if (currentBookId) {
+                localStorage.setItem(currentBookId + '_scroll_pos', contentDiv.scrollTop);
+            }
             
             document.getElementById('reader-container').style.display = 'none';
             document.getElementById('library-view').style.display = 'block';
+            currentBookId = ''; // Reset ID
         }
 
         // --- KEYPAD CONTROLS ---
@@ -147,7 +163,7 @@
                 else if (key === '*' || code === 106) {
                     adjustFont(-1);
                 }
-                // 9 : Go Back to Library (Since there is no button)
+                // 9 : Go Back to Library
                 else if (key === '9' || code === 57) {
                     goBack();
                 }
@@ -156,7 +172,9 @@
 
         // Also save progress continuously while scrolling just in case
         contentDiv.addEventListener('scroll', function() {
-            localStorage.setItem('livewired_scroll_pos', contentDiv.scrollTop);
+            if (currentBookId) {
+                localStorage.setItem(currentBookId + '_scroll_pos', contentDiv.scrollTop);
+            }
         });
     </script>
 
