@@ -32,21 +32,23 @@
         }
         #book-content { 
             width: 240px; height: 320px; 
-            padding: 10px; box-sizing: border-box; /* Reduced padding to maximize space */
+            padding: 10px; box-sizing: border-box; 
             overflow-y: auto; 
             font-size: 14px; line-height: 1.5;
-            white-space: pre-wrap; 
-            word-wrap: break-word;
             color: #e0e0e0;
-            text-align: justify; /* FIX 2: Justifies text to fill both edges */
+            
+            /* SAFE CSS FIXES FOR SPACING */
+            white-space: normal; /* Ignores hard line breaks, wraps text naturally */
+            text-align: justify; /* Stretches text to both edges */
             text-justify: inter-word;
+            word-wrap: break-word;
         }
         
-        /* Hide scrollbar for clean full-screen look */
+        /* Hide scrollbar */
         #book-content::-webkit-scrollbar { display: none; }
         #book-content { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Subtle Toast for Zoom feedback */
+        /* Toast for Zoom feedback */
         #toast {
             display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.8); color: #00bc8c; padding: 10px 20px; border-radius: 20px;
@@ -69,7 +71,6 @@
         <div id="book-content" tabindex="0"></div>
     </div>
 
-    <!-- Zoom Feedback -->
     <div id="toast"></div>
 
     <script>
@@ -82,19 +83,15 @@
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('reader-container').style.display = 'block';
 
+            // Simple, safe fetch without heavy text processing
             fetch(fileName)
                 .then(response => {
                     if (!response.ok) throw new Error("File not found");
                     return response.text();
                 })
                 .then(text => {
-                    // FIX 2: Clean up the text to remove wasted space (hard line breaks)
-                    let cleanText = text.replace(/\r\n/g, '\n'); // Normalize line endings
-                    cleanText = cleanText.replace(/\n\n+/g, '\n\n'); // Normalize paragraph breaks
-                    // Join lines that are broken in the middle of a sentence
-                    cleanText = cleanText.replace(/([^\n])\n([^\n])/g, '$1 $2'); 
-                    
-                    contentDiv.innerText = cleanText;
+                    // Use textContent for maximum safety and speed
+                    contentDiv.textContent = text; 
                     applyFontSize();
                     
                     var savedPos = localStorage.getItem(bookId + '_scroll_pos');
@@ -140,8 +137,7 @@
             var isReaderOpen = document.getElementById('reader-container').style.display === 'block';
 
             if (isReaderOpen) {
-                // FIX 1: Page-wise scrolling (jumps exactly one screen height)
-                // We subtract 10px so you don't lose your place completely between pages
+                // Page-wise scrolling (jumps exactly one screen height)
                 var pageHeight = contentDiv.clientHeight - 10; 
 
                 // 8 or Down: Next Page
