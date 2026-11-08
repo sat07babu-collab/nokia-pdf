@@ -32,11 +32,14 @@
         }
         #book-content { 
             width: 240px; height: 320px; 
-            padding: 15px; box-sizing: border-box;
+            padding: 10px; box-sizing: border-box; /* Reduced padding to maximize space */
             overflow-y: auto; 
-            font-size: 14px; line-height: 1.6;
-            white-space: pre-wrap; word-wrap: break-word;
+            font-size: 14px; line-height: 1.5;
+            white-space: pre-wrap; 
+            word-wrap: break-word;
             color: #e0e0e0;
+            text-align: justify; /* FIX 2: Justifies text to fill both edges */
+            text-justify: inter-word;
         }
         
         /* Hide scrollbar for clean full-screen look */
@@ -57,16 +60,8 @@
     <!-- Library Menu -->
     <div id="library-view">
         <div class="section-title">My Bookshelf</div>
-        
-        <!-- Book 1 -->
-        <div class="book-item" onclick="openBook('book.txt', 'book1')">
-            📖 Livewired
-        </div>
-        
-        <!-- Book 2 (Make sure you upload book2.txt to GitHub!) -->
-        <div class="book-item" onclick="openBook('book2.txt', 'book2')">
-            📖 Book 2
-        </div>
+        <div class="book-item" onclick="openBook('book.txt', 'book1')">📖 Livewired</div>
+        <div class="book-item" onclick="openBook('book2.txt', 'book2')">📖 Book 2</div>
     </div>
 
     <!-- Fullscreen Reader -->
@@ -80,11 +75,10 @@
     <script>
         var currentFontSize = 14;
         var contentDiv = document.getElementById('book-content');
-        var currentBookId = ''; // Tracks which book is currently open
+        var currentBookId = '';
 
         function openBook(fileName, bookId) {
-            currentBookId = bookId; // Save the ID so we can save progress later
-            
+            currentBookId = bookId;
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('reader-container').style.display = 'block';
 
@@ -94,19 +88,20 @@
                     return response.text();
                 })
                 .then(text => {
-                    contentDiv.innerText = text;
+                    // FIX 2: Clean up the text to remove wasted space (hard line breaks)
+                    let cleanText = text.replace(/\r\n/g, '\n'); // Normalize line endings
+                    cleanText = cleanText.replace(/\n\n+/g, '\n\n'); // Normalize paragraph breaks
+                    // Join lines that are broken in the middle of a sentence
+                    cleanText = cleanText.replace(/([^\n])\n([^\n])/g, '$1 $2'); 
+                    
+                    contentDiv.innerText = cleanText;
                     applyFontSize();
                     
-                    // RESTORE PROGRESS: Check if we have a saved scroll position for THIS specific book
                     var savedPos = localStorage.getItem(bookId + '_scroll_pos');
-                    if (savedPos) {
-                        contentDiv.scrollTop = parseInt(savedPos);
-                    } else {
-                        contentDiv.scrollTop = 0;
-                    }
+                    contentDiv.scrollTop = savedPos ? parseInt(savedPos) : 0;
                 })
                 .catch(err => {
-                    alert("Error loading " + fileName + ". Did you upload it to GitHub?");
+                    alert("Error loading " + fileName);
                     goBack();
                 });
         }
@@ -116,7 +111,7 @@
         }
 
         function adjustFont(direction) {
-            if (direction === 1 && currentFontSize < 24) currentFontSize += 2;
+            if (direction === 1 && currentFontSize < 22) currentFontSize += 2;
             else if (direction === -1 && currentFontSize > 10) currentFontSize -= 2;
             applyFontSize();
             showToast("Font: " + currentFontSize + "px");
@@ -130,14 +125,12 @@
         }
 
         function goBack() {
-            // SAVE PROGRESS for the specific book before leaving
             if (currentBookId) {
                 localStorage.setItem(currentBookId + '_scroll_pos', contentDiv.scrollTop);
             }
-            
             document.getElementById('reader-container').style.display = 'none';
             document.getElementById('library-view').style.display = 'block';
-            currentBookId = ''; // Reset ID
+            currentBookId = '';
         }
 
         // --- KEYPAD CONTROLS ---
@@ -147,13 +140,17 @@
             var isReaderOpen = document.getElementById('reader-container').style.display === 'block';
 
             if (isReaderOpen) {
-                // 8 or Down: Scroll Down
+                // FIX 1: Page-wise scrolling (jumps exactly one screen height)
+                // We subtract 10px so you don't lose your place completely between pages
+                var pageHeight = contentDiv.clientHeight - 10; 
+
+                // 8 or Down: Next Page
                 if (key === '8' || code === 40) {
-                    contentDiv.scrollBy(0, 150);
+                    contentDiv.scrollBy(0, pageHeight);
                 }
-                // 2 or Up: Scroll Up
+                // 2 or Up: Previous Page
                 else if (key === '2' || code === 38) {
-                    contentDiv.scrollBy(0, -150);
+                    contentDiv.scrollBy(0, -pageHeight);
                 }
                 // # : Zoom In
                 else if (key === '#' || code === 35) {
@@ -163,14 +160,13 @@
                 else if (key === '*' || code === 106) {
                     adjustFont(-1);
                 }
-                // 9 : Go Back to Library
+                // 9 : Go Back
                 else if (key === '9' || code === 57) {
                     goBack();
                 }
             }
         }, true);
 
-        // Also save progress continuously while scrolling just in case
         contentDiv.addEventListener('scroll', function() {
             if (currentBookId) {
                 localStorage.setItem(currentBookId + '_scroll_pos', contentDiv.scrollTop);
