@@ -36,10 +36,8 @@
             overflow-y: auto; 
             font-size: 14px; line-height: 1.5;
             color: #e0e0e0;
-            
-            /* SAFE CSS FIXES FOR SPACING */
-            white-space: normal; /* Ignores hard line breaks, wraps text naturally */
-            text-align: justify; /* Stretches text to both edges */
+            white-space: normal; 
+            text-align: justify; 
             text-justify: inter-word;
             word-wrap: break-word;
         }
@@ -83,17 +81,14 @@
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('reader-container').style.display = 'block';
 
-            // Simple, safe fetch without heavy text processing
             fetch(fileName)
                 .then(response => {
                     if (!response.ok) throw new Error("File not found");
                     return response.text();
                 })
                 .then(text => {
-                    // Use textContent for maximum safety and speed
                     contentDiv.textContent = text; 
                     applyFontSize();
-                    
                     var savedPos = localStorage.getItem(bookId + '_scroll_pos');
                     contentDiv.scrollTop = savedPos ? parseInt(savedPos) : 0;
                 })
@@ -137,28 +132,30 @@
             var isReaderOpen = document.getElementById('reader-container').style.display === 'block';
 
             if (isReaderOpen) {
-                // Page-wise scrolling (jumps exactly one screen height)
                 var pageHeight = contentDiv.clientHeight - 10; 
 
-                // 8 or Down: Next Page
                 if (key === '8' || code === 40) {
                     contentDiv.scrollBy(0, pageHeight);
                 }
-                // 2 or Up: Previous Page
                 else if (key === '2' || code === 38) {
                     contentDiv.scrollBy(0, -pageHeight);
                 }
-                // # : Zoom In
                 else if (key === '#' || code === 35) {
                     adjustFont(1);
                 }
-                // * : Zoom Out
                 else if (key === '*' || code === 106) {
                     adjustFont(-1);
                 }
-                // 9 : Go Back
                 else if (key === '9' || code === 57) {
                     goBack();
+                }
+                // NEW: Press 0 to open AI Chat
+                else if (key === '0' || code === 48) {
+                    // Save position before leaving
+                    if (currentBookId) {
+                        localStorage.setItem(currentBookId + '_scroll_pos', contentDiv.scrollTop);
+                    }
+                    window.location.href = 'chat.html';
                 }
             }
         }, true);
@@ -169,6 +166,5 @@
             }
         });
     </script>
-
 </body>
 </html>
