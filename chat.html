@@ -5,99 +5,55 @@
     <meta name="viewport" content="width=240, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nokia AI Chat</title>
     <style>
-        /* Exact same minimalist, lightweight CSS as your e-reader */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            width: 240px;
-            height: 320px;
-            overflow: hidden;
-            background: #121212;
-            color: #e0e0e0;
-            font-family: monospace;
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
+            width: 240px; height: 320px; overflow: hidden;
+            background: #121212; color: #e0e0e0;
+            font-family: -apple-system, sans-serif;
+            display: flex; flex-direction: column;
         }
         #header {
-            height: 24px;
-            background: #1e1e1e;
-            color: #00ff00;
-            text-align: center;
-            line-height: 24px;
-            font-weight: bold;
-            font-size: 12px;
-            border-bottom: 1px solid #333;
+            height: 24px; background: #1e1e1e; color: #00bc8c;
+            text-align: center; line-height: 24px; font-weight: bold;
+            font-size: 12px; border-bottom: 1px solid #333;
         }
         #chat-box {
-            flex: 1;
-            overflow-y: auto;
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            flex: 1; overflow-y: auto; padding: 6px;
+            display: flex; flex-direction: column; gap: 8px;
         }
         .msg {
-            padding: 6px 8px;
-            border-radius: 4px;
-            word-wrap: break-word;
-            line-height: 1.3;
-            font-size: 13px;
-            max-width: 90%;
+            padding: 6px 8px; border-radius: 4px;
+            word-wrap: break-word; line-height: 1.3;
+            font-size: 13px; max-width: 90%;
         }
-        .user { 
-            align-self: flex-end; 
-            background: #005c4b; 
-            color: white; 
-        }
-        .bot { 
-            align-self: flex-start; 
-            background: #2a2a2a; 
-            color: #e0e0e0; 
-            border-left: 2px solid #00ff00;
-        }
+        .user { align-self: flex-end; background: #005c4b; color: white; }
+        .bot { align-self: flex-start; background: #2a2a2a; color: #e0e0e0; border-left: 2px solid #00bc8c; }
+        
         #input-area {
-            height: 50px;
-            border-top: 1px solid #333;
-            padding: 4px;
-            background: #1e1e1e;
-            display: flex;
-            flex-direction: column;
+            height: 50px; border-top: 1px solid #333;
+            padding: 4px; background: #1e1e1e; display: flex; flex-direction: column;
         }
         #user-input {
-            width: 100%;
-            height: 28px;
-            background: #000;
-            color: #00ff00;
-            border: 1px solid #555;
-            font-family: monospace;
-            font-size: 14px;
-            padding: 2px 4px;
-            outline: none;
+            width: 100%; height: 28px; background: #000; color: #00bc8c;
+            border: 1px solid #555; font-family: -apple-system, sans-serif;
+            font-size: 14px; padding: 2px 4px; outline: none;
         }
-        #user-input:focus { border-color: #00ff00; }
+        #user-input:focus { border-color: #00bc8c; }
         
         #controls {
-            height: 24px;
-            display: flex;
-            border-top: 1px solid #333;
-            background: #1e1e1e;
+            height: 24px; display: flex; border-top: 1px solid #333; background: #1e1e1e;
         }
         .btn {
-            flex: 1;
-            text-align: center;
-            line-height: 24px;
-            color: #00ff00;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
+            flex: 1; text-align: center; line-height: 24px;
+            color: #00bc8c; font-size: 12px; font-weight: bold; cursor: pointer;
         }
-        .btn:active { background: #00ff00; color: #000; }
+        .btn:active { background: #00bc8c; color: #000; }
         #send-btn { border-left: 1px solid #333; }
     </style>
 </head>
 <body>
 
-    <div id="header">CHATGPT (SIM)</div>
+    <div id="header">AI CHAT</div>
     
     <div id="chat-box">
         <div class="msg bot">Hello! I am ready. Type a message.</div>
@@ -108,7 +64,7 @@
     </div>
 
     <div id="controls">
-        <div class="btn" id="clear-btn" onclick="clearChat()">CLEAR (9)</div>
+        <div class="btn" onclick="goBack()">BACK (9)</div>
         <div class="btn" id="send-btn" onclick="sendMessage()">SEND (5)</div>
     </div>
 
@@ -116,35 +72,33 @@
         const chatBox = document.getElementById('chat-box');
         const input = document.getElementById('user-input');
         
-        // Auto-focus input on load
         window.onload = () => input.focus();
 
-        // Keypad Navigation (Matches your e-reader controls)
-        document.addEventListener('keydown', (e) => {
+        // Keypad Navigation
+        window.addEventListener('keydown', function(e) {
+            var key = e.key;
+            var code = e.keyCode;
+
             if (document.activeElement === input) {
-                // Press '5' (Center) or 'Enter' to send
-                if (e.key === '5' || e.key === 'Enter') {
+                if (key === '5' || key === 'Enter' || code === 13) {
                     e.preventDefault();
                     sendMessage();
                 }
             } else {
-                // When not typing, use 2/8 to scroll chat
-                if (e.key === '8') { chatBox.scrollTop += 60; }
-                if (e.key === '2') { chatBox.scrollTop -= 60; }
-                // Press '9' to clear
-                if (e.key === '9') { clearChat(); }
+                if (key === '8' || code === 40) { chatBox.scrollTop += 60; }
+                if (key === '2' || code === 38) { chatBox.scrollTop -= 60; }
+                // NEW: Press 9 to go back to the book
+                if (key === '9' || code === 57) { goBack(); }
             }
-        });
+        }, true);
 
         function sendMessage() {
             const text = input.value.trim();
             if (!text) return;
 
-            // 1. Add user message
             addMessage(text, 'user');
             input.value = '';
             
-            // 2. Show "Thinking..."
             const loadingId = 'loading-' + Date.now();
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'msg bot';
@@ -153,7 +107,6 @@
             chatBox.appendChild(loadingDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            // 3. Simulate AI Response (No backend needed!)
             setTimeout(() => {
                 const loadingEl = document.getElementById(loadingId);
                 if (loadingEl) {
@@ -161,15 +114,15 @@
                 }
                 chatBox.scrollTop = chatBox.scrollHeight;
                 input.focus();
-            }, 1000); // 1 second delay to feel realistic
+            }, 800);
         }
 
         function getSimulatedResponse(userText) {
             const lower = userText.toLowerCase();
             if (lower.includes('hello') || lower.includes('hi')) return "Hello there! How can I help you today?";
             if (lower.includes('time')) return "The current time is " + new Date().toLocaleTimeString();
-            if (lower.includes('name')) return "I am a simulated AI running purely in your browser. No backend required!";
-            return "You said: '" + userText + "'. \n\n(Note: This is a simulated response to prove the UI works perfectly. To connect real ChatGPT, replace the 'getSimulatedResponse' function in the code with a real fetch() API call.)";
+            if (lower.includes('book') || lower.includes('read')) return "Enjoying the book? Press 9 anytime to go back to reading!";
+            return "You said: '" + userText + "'.\n\n(Note: This is a simulated response. The UI is fully working!)";
         }
 
         function addMessage(text, sender) {
@@ -180,9 +133,9 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function clearChat() {
-            chatBox.innerHTML = '<div class="msg bot">Chat cleared. Ready.</div>';
-            input.focus();
+        function goBack() {
+            // This instantly takes you back to the e-reader
+            window.location.href = 'index.html';
         }
     </script>
 </body>
